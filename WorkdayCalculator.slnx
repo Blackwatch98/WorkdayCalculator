@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../WorkdayCalculator.Tests/WorkdayCalculator.Tests.csproj" />
+  <Project Path="WorkdayCalculator.App.csproj" />
+</Solution>
