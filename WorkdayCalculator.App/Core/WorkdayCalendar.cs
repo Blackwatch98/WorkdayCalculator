@@ -6,8 +6,8 @@ public class WorkdayCalendar : IWorkdayCalendar
 {
     private TimeSpan _workdayStart;
     private TimeSpan _workdayEnd;
-    private HashSet<DateOnly> _holidays = [];
-    private HashSet<RecurringHoliday> _recurringHolidays = [];
+    private readonly HashSet<DateOnly> _holidays = [];
+    private readonly HashSet<RecurringHoliday> _recurringHolidays = [];
     public DateTime GetWorkdayIncrement(DateTime startDate, decimal incrementInWorkdays)
     {
         throw new NotImplementedException();
@@ -20,7 +20,13 @@ public class WorkdayCalendar : IWorkdayCalendar
 
     public void SetRecurringHoliday(int month, int day)
     {
-        throw new NotImplementedException();
+        if (month < 1 || month > 12)
+            throw new ArgumentOutOfRangeException(nameof(month));
+
+        if (day < 1 || day > 31)
+            throw new ArgumentOutOfRangeException(nameof(day));
+
+        _recurringHolidays.Add(new RecurringHoliday(month, day));
     }
 
     public void SetWorkdayStartAndStop(int startHours, int startMinutes, int stopHours, int stopMinutes)
