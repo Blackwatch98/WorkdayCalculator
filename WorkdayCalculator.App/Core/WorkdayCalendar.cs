@@ -10,7 +10,62 @@ public class WorkdayCalendar : IWorkdayCalendar
     private readonly HashSet<RecurringHoliday> _recurringHolidays = [];
     public DateTime GetWorkdayIncrement(DateTime startDate, decimal incrementInWorkdays)
     {
-        throw new NotImplementedException();
+        if (incrementInWorkdays == 0)
+            return startDate;
+
+        int direction = Math.Sign(incrementInWorkdays);
+        int workMinutesPerDay = (int)(_workdayEnd - _workdayStart).TotalMinutes;
+        int remainingWorkminutes = (int)(incrementInWorkdays * workMinutesPerDay);
+        DateTime currentDateTime = startDate;
+
+        if (direction > 0)
+        {
+            if (currentDateTime.TimeOfDay < _workdayStart)
+                currentDateTime = currentDateTime.Date + _workdayStart;
+            else if (currentDateTime.TimeOfDay > _workdayEnd)
+            {
+                currentDateTime = currentDateTime.Date.AddDays(1) + _workdayStart;
+            }
+        }
+        else if (direction < 0)
+        {
+            if (currentDateTime.TimeOfDay > _workdayEnd)
+                currentDateTime = currentDateTime.Date + _workdayEnd;
+            else if (currentDateTime.TimeOfDay < _workdayStart)
+            {
+                currentDateTime = currentDateTime.Date.AddDays(-1) + _workdayEnd;
+            }
+        }
+
+        while (true)
+        {
+            if (currentDateTime.DayOfWeek == DayOfWeek.Saturday || currentDateTime.DayOfWeek == DayOfWeek.Sunday)
+            {
+                currentDateTime = currentDateTime.AddDays(direction > 0 ? 1 : -1);
+                continue;
+            }
+            if(_holidays.Contains(DateOnly.FromDateTime(currentDateTime)))
+            {
+                currentDateTime = currentDateTime.AddDays(direction > 0 ? 1 : -1);
+                continue;
+            }
+            if(_recurringHolidays.Contains(new RecurringHoliday(currentDateTime.Month, currentDateTime.Day)))
+            {
+                currentDateTime = currentDateTime.AddDays(direction > 0 ? 1 : -1);
+                continue;
+            }
+
+            if(Math.Abs(remainingWorkminutes) < workMinutesPerDay)
+            {
+                currentDateTime = currentDateTime.AddMinutes(remainingWorkminutes);
+                break;
+            }
+            currentDateTime = currentDateTime.AddDays(direction > 0 ? 1 : -1);
+
+            remainingWorkminutes -= direction * workMinutesPerDay;
+        }
+
+        return currentDateTime;
     }
 
     public void SetHoliday(DateTime date)

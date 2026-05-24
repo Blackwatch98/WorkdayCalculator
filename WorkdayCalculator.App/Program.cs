@@ -10,7 +10,7 @@ calendar.SetHoliday(new DateTime(2004, 5, 27));
 
 string format = "dd-MM-yyyy HH:mm";
 var start = new DateTime(2004, 5, 24, 18, 5, 0);
-decimal increment = -5.5m;
+decimal increment = 44.723656m;
 var incrementedDate = calendar.GetWorkdayIncrement(start, increment);
 
 Console.WriteLine(
