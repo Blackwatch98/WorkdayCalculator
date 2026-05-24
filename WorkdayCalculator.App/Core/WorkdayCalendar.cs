@@ -15,7 +15,7 @@ public class WorkdayCalendar : IWorkdayCalendar
 
     public void SetHoliday(DateTime date)
     {
-        throw new NotImplementedException();
+        _holidays.Add(DateOnly.FromDateTime(date));
     }
 
     public void SetRecurringHoliday(int month, int day)
