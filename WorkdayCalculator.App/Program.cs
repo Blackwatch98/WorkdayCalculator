@@ -9,8 +9,8 @@ calendar.SetRecurringHoliday(5, 17);
 calendar.SetHoliday(new DateTime(2004, 5, 27));
 
 string format = "dd-MM-yyyy HH:mm";
-var start = new DateTime(2004, 5, 24, 18, 5, 0);
-decimal increment = 44.723656m;
+var start = new DateTime(2004, 5, 24, 7, 3, 0);
+decimal increment = 8.276628m;
 var incrementedDate = calendar.GetWorkdayIncrement(start, increment);
 
 Console.WriteLine(

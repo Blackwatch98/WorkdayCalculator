@@ -15,26 +15,25 @@ public class WorkdayCalendar : IWorkdayCalendar
 
         int direction = Math.Sign(incrementInWorkdays);
         int workMinutesPerDay = (int)(_workdayEnd - _workdayStart).TotalMinutes;
-        int remainingWorkminutes = (int)(incrementInWorkdays * workMinutesPerDay);
-        
+        int remainingWorkMinutes = Math.Abs((int)(incrementInWorkdays * workMinutesPerDay));
+
         DateTime currentDateTime = NormalizeToWorkdayBoundary(startDate, direction);
 
-        while (true)
+        while (remainingWorkMinutes > 0)
         {
             if (!IsWorkday(currentDateTime))
             {
-                currentDateTime = MoveToNextDay(currentDateTime, direction);
+                currentDateTime = MoveToNextDayBoundary(currentDateTime, direction);
                 continue;
             }
 
-            if(IsLessThanFullWorkday(remainingWorkminutes, workMinutesPerDay))
-            {
-                currentDateTime = currentDateTime.AddMinutes(remainingWorkminutes);
-                break;
-            }
+            int availableMinutesInCurrentDay = GetAvailableWorkMinutesInCurrentDay(currentDateTime, direction);
 
-            currentDateTime = MoveToNextDay(currentDateTime, direction);
-            remainingWorkminutes = SubtractFullWorkday(remainingWorkminutes, direction, workMinutesPerDay);
+            if (remainingWorkMinutes <= availableMinutesInCurrentDay)
+                return AddWorkMinutes(currentDateTime, remainingWorkMinutes, direction);
+
+            remainingWorkMinutes -= availableMinutesInCurrentDay;
+            currentDateTime = MoveToNextDayBoundary(currentDateTime, direction);
         }
 
         return currentDateTime;
@@ -58,7 +57,7 @@ public class WorkdayCalendar : IWorkdayCalendar
 
     public void SetWorkdayStartAndStop(int startHours, int startMinutes, int stopHours, int stopMinutes)
     {
-        if(startHours < 0 || startHours > 23)
+        if (startHours < 0 || startHours > 23)
             throw new ArgumentOutOfRangeException(nameof(startHours));
 
         if (stopHours < 0 || stopHours > 23)
@@ -120,7 +119,22 @@ public class WorkdayCalendar : IWorkdayCalendar
         return true;
     }
 
-    private static DateTime MoveToNextDay(DateTime currentDateTime, int direction) => currentDateTime.AddDays(direction);
-    private static bool IsLessThanFullWorkday(int remainingWorkMinutes, int workMinutesPerDay) =>Math.Abs(remainingWorkMinutes) < workMinutesPerDay;
-    private static int SubtractFullWorkday(int remainingWorkMinutes, int direction, int workMinutesPerDay) => remainingWorkMinutes - direction * workMinutesPerDay;
+    private DateTime MoveToNextDayBoundary(DateTime currentDateTime, int direction)
+    {
+        return direction > 0
+            ? currentDateTime.Date.AddDays(1) + _workdayStart
+            : currentDateTime.Date.AddDays(-1) + _workdayEnd;
+    }
+
+    private int GetAvailableWorkMinutesInCurrentDay(DateTime currentDateTime, int direction)
+    {
+        return direction > 0
+            ? (int)(_workdayEnd - currentDateTime.TimeOfDay).TotalMinutes
+            : (int)(currentDateTime.TimeOfDay - _workdayStart).TotalMinutes;
+    }
+
+    private static DateTime AddWorkMinutes(DateTime dateTime, int minutes, int direction)
+    {
+        return dateTime.AddMinutes(direction * minutes);
+    }
 }
