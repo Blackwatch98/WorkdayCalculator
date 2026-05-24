@@ -16,36 +16,25 @@ public class WorkdayCalendar : IWorkdayCalendar
         int direction = Math.Sign(incrementInWorkdays);
         int workMinutesPerDay = (int)(_workdayEnd - _workdayStart).TotalMinutes;
         int remainingWorkminutes = (int)(incrementInWorkdays * workMinutesPerDay);
-        DateTime currentDateTime = startDate;
-
-        currentDateTime = NormalizeToWorkdayBoundary(currentDateTime, direction);
+        
+        DateTime currentDateTime = NormalizeToWorkdayBoundary(startDate, direction);
 
         while (true)
         {
-            if (currentDateTime.DayOfWeek == DayOfWeek.Saturday || currentDateTime.DayOfWeek == DayOfWeek.Sunday)
+            if (!IsWorkday(currentDateTime))
             {
-                currentDateTime = currentDateTime.AddDays(direction > 0 ? 1 : -1);
-                continue;
-            }
-            if(_holidays.Contains(DateOnly.FromDateTime(currentDateTime)))
-            {
-                currentDateTime = currentDateTime.AddDays(direction > 0 ? 1 : -1);
-                continue;
-            }
-            if(_recurringHolidays.Contains(new RecurringHoliday(currentDateTime.Month, currentDateTime.Day)))
-            {
-                currentDateTime = currentDateTime.AddDays(direction > 0 ? 1 : -1);
+                currentDateTime = MoveToNextDay(currentDateTime, direction);
                 continue;
             }
 
-            if(Math.Abs(remainingWorkminutes) < workMinutesPerDay)
+            if(IsLessThanFullWorkday(remainingWorkminutes, workMinutesPerDay))
             {
                 currentDateTime = currentDateTime.AddMinutes(remainingWorkminutes);
                 break;
             }
-            currentDateTime = currentDateTime.AddDays(direction > 0 ? 1 : -1);
 
-            remainingWorkminutes -= direction * workMinutesPerDay;
+            currentDateTime = MoveToNextDay(currentDateTime, direction);
+            remainingWorkminutes = SubtractFullWorkday(remainingWorkminutes, direction, workMinutesPerDay);
         }
 
         return currentDateTime;
@@ -116,4 +105,22 @@ public class WorkdayCalendar : IWorkdayCalendar
 
         return currentDateTime;
     }
+
+    private bool IsWorkday(DateTime date)
+    {
+        if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
+            return false;
+
+        if (_holidays.Contains(DateOnly.FromDateTime(date)))
+            return false;
+
+        if (_recurringHolidays.Contains(new RecurringHoliday(date.Month, date.Day)))
+            return false;
+
+        return true;
+    }
+
+    private static DateTime MoveToNextDay(DateTime currentDateTime, int direction) => currentDateTime.AddDays(direction);
+    private static bool IsLessThanFullWorkday(int remainingWorkMinutes, int workMinutesPerDay) =>Math.Abs(remainingWorkMinutes) < workMinutesPerDay;
+    private static int SubtractFullWorkday(int remainingWorkMinutes, int direction, int workMinutesPerDay) => remainingWorkMinutes - direction * workMinutesPerDay;
 }
