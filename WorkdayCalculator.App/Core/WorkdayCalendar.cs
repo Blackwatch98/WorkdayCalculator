@@ -18,24 +18,7 @@ public class WorkdayCalendar : IWorkdayCalendar
         int remainingWorkminutes = (int)(incrementInWorkdays * workMinutesPerDay);
         DateTime currentDateTime = startDate;
 
-        if (direction > 0)
-        {
-            if (currentDateTime.TimeOfDay < _workdayStart)
-                currentDateTime = currentDateTime.Date + _workdayStart;
-            else if (currentDateTime.TimeOfDay > _workdayEnd)
-            {
-                currentDateTime = currentDateTime.Date.AddDays(1) + _workdayStart;
-            }
-        }
-        else if (direction < 0)
-        {
-            if (currentDateTime.TimeOfDay > _workdayEnd)
-                currentDateTime = currentDateTime.Date + _workdayEnd;
-            else if (currentDateTime.TimeOfDay < _workdayStart)
-            {
-                currentDateTime = currentDateTime.Date.AddDays(-1) + _workdayEnd;
-            }
-        }
+        currentDateTime = NormalizeToWorkdayBoundary(currentDateTime, direction);
 
         while (true)
         {
@@ -113,5 +96,24 @@ public class WorkdayCalendar : IWorkdayCalendar
         return $"Workday: {_workdayStart} - {_workdayEnd}, " +
                $"Holidays: {_holidays.Count}, " +
                $"Recurring: {_recurringHolidays.Count}";
+    }
+
+    private DateTime NormalizeToWorkdayBoundary(DateTime currentDateTime, int direction)
+    {
+        if (currentDateTime.TimeOfDay < _workdayStart)
+        {
+            return direction > 0
+                ? currentDateTime.Date + _workdayStart
+                : currentDateTime.Date.AddDays(-1) + _workdayEnd;
+        }
+
+        if (currentDateTime.TimeOfDay > _workdayEnd)
+        {
+            return direction > 0
+                ? currentDateTime.Date.AddDays(1) + _workdayStart
+                : currentDateTime.Date + _workdayEnd;
+        }
+
+        return currentDateTime;
     }
 }
