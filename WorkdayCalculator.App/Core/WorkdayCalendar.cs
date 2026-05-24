@@ -27,4 +27,11 @@ public class WorkdayCalendar : IWorkdayCalendar
     {
         throw new NotImplementedException();
     }
+
+    public override string ToString()
+    {
+        return $"Workday: {_workdayStart} - {_workdayEnd}, " +
+               $"Holidays: {_holidays.Count}, " +
+               $"Recurring: {_recurringHolidays.Count}";
+    }
 }
