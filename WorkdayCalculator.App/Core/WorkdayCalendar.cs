@@ -25,7 +25,26 @@ public class WorkdayCalendar : IWorkdayCalendar
 
     public void SetWorkdayStartAndStop(int startHours, int startMinutes, int stopHours, int stopMinutes)
     {
-        throw new NotImplementedException();
+        if(startHours < 0 || startHours > 23)
+            throw new ArgumentOutOfRangeException(nameof(startHours));
+
+        if (stopHours < 0 || stopHours > 23)
+            throw new ArgumentOutOfRangeException(nameof(stopHours));
+
+        if (startMinutes < 0 || startMinutes > 59)
+            throw new ArgumentOutOfRangeException(nameof(startMinutes));
+
+        if (stopMinutes < 0 || stopMinutes > 59)
+            throw new ArgumentOutOfRangeException(nameof(stopMinutes));
+
+        TimeSpan start = new TimeSpan(startHours, startMinutes, 0);
+        TimeSpan stop = new TimeSpan(stopHours, stopMinutes, 0);
+
+        if (stop <= start)
+            throw new ArgumentException("Workday end must be after start time.");
+
+        _workdayStart = start;
+        _workdayEnd = stop;
     }
 
     public override string ToString()
