@@ -1,7 +1,13 @@
-﻿namespace WorkdayCalculator.App.Core;
+﻿using WorkdayCalculator.App.Models;
+
+namespace WorkdayCalculator.App.Core;
 
 public class WorkdayCalendar : IWorkdayCalendar
 {
+    private TimeSpan _workdayStart;
+    private TimeSpan _workdayEnd;
+    private HashSet<DateOnly> _holidays = [];
+    private HashSet<RecurringHoliday> _recurringHolidays = [];
     public DateTime GetWorkdayIncrement(DateTime startDate, decimal incrementInWorkdays)
     {
         throw new NotImplementedException();
