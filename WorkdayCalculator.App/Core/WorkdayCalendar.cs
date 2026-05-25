@@ -4,8 +4,10 @@ namespace WorkdayCalculator.App.Core;
 
 public class WorkdayCalendar : IWorkdayCalendar
 {
-    private TimeSpan _workdayStart;
-    private TimeSpan _workdayEnd;
+    private WorkTimeRange? _workTimeRange;
+    private WorkTimeRange WorkTime => _workTimeRange
+        ?? throw new InvalidOperationException(
+            $"Workday start/stop must be set via {nameof(SetWorkdayStartAndStop)} before use.");
     private readonly HashSet<DateOnly> _holidays = [];
     private readonly HashSet<RecurringHoliday> _recurringHolidays = [];
     public DateTime GetWorkdayIncrement(DateTime startDate, decimal incrementInWorkdays)
@@ -14,7 +16,7 @@ public class WorkdayCalendar : IWorkdayCalendar
             return startDate;
 
         int direction = Math.Sign(incrementInWorkdays);
-        int workMinutesPerDay = (int)(_workdayEnd - _workdayStart).TotalMinutes;
+        int workMinutesPerDay = (int)(WorkTime.Duration.TotalMinutes);
         int remainingWorkMinutes = Math.Abs((int)(incrementInWorkdays * workMinutesPerDay));
 
         DateTime currentDateTime = NormalizeToWorkdayBoundary(startDate, direction);
@@ -27,7 +29,7 @@ public class WorkdayCalendar : IWorkdayCalendar
                 continue;
             }
 
-            int availableMinutesInCurrentDay = GetAvailableWorkMinutesInCurrentDay(currentDateTime, direction);
+            int availableMinutesInCurrentDay = GetAvailableWorkMinutes(currentDateTime, direction);
 
             if (remainingWorkMinutes <= availableMinutesInCurrentDay)
                 return AddWorkMinutes(currentDateTime, remainingWorkMinutes, direction);
@@ -39,10 +41,7 @@ public class WorkdayCalendar : IWorkdayCalendar
         return currentDateTime;
     }
 
-    public void SetHoliday(DateTime date)
-    {
-        _holidays.Add(DateOnly.FromDateTime(date));
-    }
+    public void SetHoliday(DateTime date) => _holidays.Add(DateOnly.FromDateTime(date));
 
     public void SetRecurringHoliday(int month, int day)
     {
@@ -55,51 +54,30 @@ public class WorkdayCalendar : IWorkdayCalendar
         _recurringHolidays.Add(new RecurringHoliday(month, day));
     }
 
-    public void SetWorkdayStartAndStop(int startHours, int startMinutes, int stopHours, int stopMinutes)
-    {
-        if (startHours < 0 || startHours > 23)
-            throw new ArgumentOutOfRangeException(nameof(startHours));
-
-        if (stopHours < 0 || stopHours > 23)
-            throw new ArgumentOutOfRangeException(nameof(stopHours));
-
-        if (startMinutes < 0 || startMinutes > 59)
-            throw new ArgumentOutOfRangeException(nameof(startMinutes));
-
-        if (stopMinutes < 0 || stopMinutes > 59)
-            throw new ArgumentOutOfRangeException(nameof(stopMinutes));
-
-        TimeSpan start = new TimeSpan(startHours, startMinutes, 0);
-        TimeSpan stop = new TimeSpan(stopHours, stopMinutes, 0);
-
-        if (stop <= start)
-            throw new ArgumentException("Workday end must be after start time.");
-
-        _workdayStart = start;
-        _workdayEnd = stop;
-    }
+    public void SetWorkdayStartAndStop(int startHours, int startMinutes, int stopHours, int stopMinutes) 
+        => _workTimeRange = WorkTimeRange.Create(startHours, startMinutes, stopHours, stopMinutes);
 
     public override string ToString()
     {
-        return $"Workday: {_workdayStart} - {_workdayEnd}, " +
+        return $"Workday: {WorkTime.Start} - {WorkTime.End}, " +
                $"Holidays: {_holidays.Count}, " +
                $"Recurring: {_recurringHolidays.Count}";
     }
 
     private DateTime NormalizeToWorkdayBoundary(DateTime currentDateTime, int direction)
     {
-        if (currentDateTime.TimeOfDay < _workdayStart)
+        if (currentDateTime.TimeOfDay < WorkTime.Start)
         {
             return direction > 0
-                ? currentDateTime.Date + _workdayStart
-                : currentDateTime.Date.AddDays(-1) + _workdayEnd;
+                ? currentDateTime.Date + WorkTime.Start
+                : currentDateTime.Date.AddDays(-1) + WorkTime.End;
         }
 
-        if (currentDateTime.TimeOfDay > _workdayEnd)
+        if (currentDateTime.TimeOfDay > WorkTime.End)
         {
             return direction > 0
-                ? currentDateTime.Date.AddDays(1) + _workdayStart
-                : currentDateTime.Date + _workdayEnd;
+                ? currentDateTime.Date.AddDays(1) + WorkTime.Start
+                : currentDateTime.Date + WorkTime.End;
         }
 
         return currentDateTime;
@@ -122,15 +100,15 @@ public class WorkdayCalendar : IWorkdayCalendar
     private DateTime MoveToNextDayBoundary(DateTime currentDateTime, int direction)
     {
         return direction > 0
-            ? currentDateTime.Date.AddDays(1) + _workdayStart
-            : currentDateTime.Date.AddDays(-1) + _workdayEnd;
+            ? currentDateTime.Date.AddDays(1) + WorkTime.Start
+            : currentDateTime.Date.AddDays(-1) + WorkTime.End;
     }
 
-    private int GetAvailableWorkMinutesInCurrentDay(DateTime currentDateTime, int direction)
+    private int GetAvailableWorkMinutes(DateTime currentDateTime, int direction)
     {
         return direction > 0
-            ? (int)(_workdayEnd - currentDateTime.TimeOfDay).TotalMinutes
-            : (int)(currentDateTime.TimeOfDay - _workdayStart).TotalMinutes;
+            ? (int)(WorkTime.End - currentDateTime.TimeOfDay).TotalMinutes
+            : (int)(currentDateTime.TimeOfDay - WorkTime.Start).TotalMinutes;
     }
 
     private static DateTime AddWorkMinutes(DateTime dateTime, int minutes, int direction)
